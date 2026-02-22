@@ -1,14 +1,27 @@
-from dataclasses import dataclass, field
-from typing import Optional
+"""
+Модуль 2. Модель задач.
 
-@dataclass
+Описывает структуру задачи и операции над задачами.
+"""
+
+
 class Task:
-    id: int
-    title: str
-    due_date: Optional[str] = None
-    priority: int = 3
-    cost: float = 0.0
-    metadata: dict = field(default_factory=dict)
+    """Класс задачи."""
 
-def create_task(next_id, title, **kwargs):
-    return Task(id=next_id, title=title, **kwargs)
+    def __init__(self, title, priority=1, cost=0, due_date=None):
+        """
+        Создание задачи.
+
+        :param title: название
+        :param priority: приоритет
+        :param cost: стоимость
+        :param due_date: срок выполнения
+        """
+        self.title = title
+        self.priority = priority
+        self.cost = cost
+        self.due_date = due_date
+
+    def __repr__(self):
+        """Строковое представление задачи."""
+        return f"<Task {self.title}, priority={self.priority}>"
