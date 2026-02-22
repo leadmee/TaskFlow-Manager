@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<book xmlns="http://docbook.org/ns/docbook" version="5.0">
+
+<title>TaskFlow Manager – Руководство разработчика</title>
+
+<chapter>
+<title>Ядро приложения</title>
+<para>Модуль app_core управляет запуском системы и взаимодействием компонентов.</para>
+</chapter>
+
+<chapter>
+<title>Модель задач</title>
+<para>task_model содержит описание структуры задачи.</para>
+</chapter>
+
+<chapter>
+<title>Планировщик</title>
+<para>scheduler сортирует задачи по срокам и приоритету.</para>
+</chapter>
+
+<chapter>
+<title>Финансы</title>
+<para>finance выполняет расчёт бюджета и стоимости задач.</para>
+</chapter>
+
+<chapter>
+<title>История</title>
+<para>history_store сохраняет изменения системы.</para>
+</chapter>
+
+<chapter>
+<title>Отчёты</title>
+<para>reports формирует аналитическую информацию.</para>
+</chapter>
+
+<chapter>
+<title>Интерфейс</title>
+<para>interface реализует взаимодействие пользователя с системой.</para>
+</chapter>
+
+<chapter>
+<title>Уведомления</title>
+<para>notifications информирует пользователя о событиях.</para>
+</chapter>
+
+</book>
