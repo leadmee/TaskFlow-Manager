@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TaskFlow Manager</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:       #0a0c10;
+      --surface:  #111418;
+      --card:     #161b22;
+      --border:   #21262d;
+      --accent:   #58a6ff;
+      --accent2:  #3fb950;
+      --accent3:  #f78166;
+      --gold:     #e3b341;
+      --text:     #e6edf3;
+      --muted:    #7d8590;
+      --mono:     'Space Mono', monospace;
+      --sans:     'Syne', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ─── NOISE OVERLAY ─── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none; opacity: .4;
+    }
+
+    /* ─── GRID BACKGROUND ─── */
+    body::after {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(rgba(88,166,255,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(88,166,255,.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+
+    section, nav, footer { position: relative; z-index: 1; }
+
+    /* ─── NAV ─── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 48px;
+      background: rgba(10,12,16,.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      font-family: var(--mono);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: -.5px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .nav-logo span { color: var(--muted); }
+    .nav-links { display: flex; gap: 32px; }
+    .nav-links a {
+      font-size: 13px; font-weight: 600;
+      color: var(--muted);
+      text-decoration: none;
+      letter-spacing: .5px;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-badge {
+      font-family: var(--mono);
+      font-size: 11px;
+      background: rgba(88,166,255,.12);
+      border: 1px solid rgba(88,166,255,.3);
+      color: var(--accent);
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+
+    /* ─── HERO ─── */
+    #hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 120px 48px 80px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-glow {
+      position: absolute;
+      width: 600px; height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(88,166,255,.12) 0%, transparent 70%);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      animation: pulse-glow 4s ease-in-out infinite;
+    }
+    .hero-glow-2 {
+      position: absolute;
+      width: 400px; height: 400px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(63,185,80,.07) 0%, transparent 70%);
+      top: 30%; right: 10%;
+      pointer-events: none;
+      animation: pulse-glow 6s ease-in-out 2s infinite;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { opacity: .6; transform: translate(-50%, -50%) scale(1); }
+      50%       { opacity: 1;  transform: translate(-50%, -50%) scale(1.1); }
+    }
+
+    .hero-tag {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--accent2);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+      display: flex; align-items: center; gap: 12px;
+      animation: fadeUp .6s ease both;
+    }
+    .hero-tag::before, .hero-tag::after {
+      content: ''; flex: 1; max-width: 60px;
+      height: 1px; background: var(--accent2); opacity: .4;
+    }
+
+    h1.hero-title {
+      font-size: clamp(52px, 8vw, 96px);
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -3px;
+      margin-bottom: 12px;
+      animation: fadeUp .6s .1s ease both;
+    }
+    h1.hero-title .line-blue { color: var(--accent); }
+    h1.hero-title .line-dim  { color: var(--muted); font-weight: 400; }
+
+    .hero-sub {
+      font-size: 18px; font-weight: 600;
+      color: var(--muted);
+      max-width: 560px;
+      margin: 20px auto 48px;
+      line-height: 1.5;
+      animation: fadeUp .6s .2s ease both;
+    }
+
+    .hero-actions {
+      display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;
+      animation: fadeUp .6s .3s ease both;
+    }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 13px 28px;
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 13px; font-weight: 700;
+      text-decoration: none;
+      transition: all .2s;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+      border: 1px solid var(--accent);
+    }
+    .btn-primary:hover { background: #79beff; border-color: #79beff; transform: translateY(-1px); }
+    .btn-outline {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-outline:hover { border-color: var(--muted); background: var(--card); transform: translateY(-1px); }
+
+    /* Floating stats */
+    .hero-stats {
+      display: flex; gap: 40px; justify-content: center;
+      margin-top: 72px;
+      animation: fadeUp .6s .4s ease both;
+    }
+    .stat {
+      text-align: center;
+    }
+    .stat-num {
+      font-family: var(--mono);
+      font-size: 36px; font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+    }
+    .stat-num .accent { color: var(--accent); }
+    .stat-label { font-size: 12px; color: var(--muted); margin-top: 6px; letter-spacing: 1px; text-transform: uppercase; }
+
+    /* ─── SECTION COMMON ─── */
+    .section {
+      padding: 100px 48px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .section-tag {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 16px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .section-tag::before {
+      content: '//'; color: var(--muted);
+    }
+    h2.section-title {
+      font-size: clamp(32px, 4vw, 52px);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -1.5px;
+      margin-bottom: 16px;
+    }
+    .section-desc {
+      font-size: 16px;
+      color: var(--muted);
+      max-width: 600px;
+      margin-bottom: 60px;
+    }
+
+    /* ─── MODULES ─── */
+    #modules { padding: 100px 0; background: var(--surface); }
+    .modules-inner {
+      max-width: 1200px; margin: 0 auto;
+      padding: 0 48px;
+    }
+
+    .modules-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+    }
+    .module-item {
+      background: var(--surface);
+      padding: 32px;
+      transition: background .2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .module-item::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(88,166,255,.04) 0%, transparent 50%);
+      opacity: 0; transition: opacity .3s;
+    }
+    .module-item:hover { background: var(--card); }
+    .module-item:hover::before { opacity: 1; }
+
+    .module-num {
+      font-family: var(--mono);
+      font-size: 11px; letter-spacing: 2px;
+      color: var(--accent); margin-bottom: 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .module-num::after { content: ''; flex: 1; height: 1px; background: var(--border); max-width: 40px; }
+    .module-icon {
+      font-size: 28px; margin-bottom: 14px;
+      display: block;
+    }
+    .module-title { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+    .module-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    /* ─── FEATURES ─── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    .feature-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      transition: border-color .2s, transform .2s;
+    }
+    .feature-card:hover { border-color: rgba(88,166,255,.4); transform: translateY(-3px); }
+    .feat-icon {
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      margin-bottom: 18px;
+    }
+    .feat-icon.blue   { background: rgba(88,166,255,.12); }
+    .feat-icon.green  { background: rgba(63,185,80,.12);  }
+    .feat-icon.orange { background: rgba(247,129,102,.12); }
+    .feat-icon.gold   { background: rgba(227,179,65,.12);  }
+    .feat-icon.purple { background: rgba(188,140,255,.12); }
+    .feat-icon.cyan   { background: rgba(56,211,255,.12);  }
+    .feature-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+    .feature-desc  { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    /* ─── TERMINAL ─── */
+    .terminal-wrap {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-top: 40px;
+    }
+    .terminal-bar {
+      background: #1c2128;
+      padding: 12px 20px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .t-dot { width: 11px; height: 11px; border-radius: 50%; }
+    .t-dot.r { background: #f78166; }
+    .t-dot.y { background: var(--gold); }
+    .t-dot.g { background: var(--accent2); }
+    .t-file { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+    .terminal-body { padding: 28px 32px; font-family: var(--mono); font-size: 13px; line-height: 2; }
+    .t-prompt { color: var(--accent2); }
+    .t-cmd    { color: var(--text); }
+    .t-output { color: var(--muted); }
+    .t-success{ color: var(--accent2); }
+    .t-info   { color: var(--accent); }
+
+    /* ─── TECH STACK ─── */
+    .stack-row {
+      display: flex; flex-wrap: wrap; gap: 12px;
+    }
+    .stack-item {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 18px;
+      font-size: 13px; font-weight: 600;
+      transition: border-color .2s;
+    }
+    .stack-item:hover { border-color: rgba(88,166,255,.4); }
+    .stack-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    /* ─── TWO COL ─── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+    .accent-block {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 40px;
+    }
+    .accent-block .big-num {
+      font-family: var(--mono);
+      font-size: 72px; font-weight: 700;
+      line-height: 1;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .accent-block .big-label { font-size: 18px; font-weight: 700; margin-top: 12px; }
+    .accent-block .big-desc  { font-size: 14px; color: var(--muted); margin-top: 8px; line-height: 1.6; }
+
+    /* progress bars */
+    .prog-list { display: flex; flex-direction: column; gap: 18px; }
+    .prog-item { }
+    .prog-header { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; }
+    .prog-label { font-weight: 600; }
+    .prog-val   { font-family: var(--mono); color: var(--accent); font-size: 12px; }
+    .prog-bar   { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .prog-fill  { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--accent), var(--accent2)); animation: fillBar 1.5s ease both; }
+    @keyframes fillBar { from { width: 0 !important; } }
+
+    /* ─── FOOTER ─── */
+    footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 48px;
+      display: flex;
+      align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 20px;
+    }
+    .footer-left { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+    .footer-left strong { color: var(--accent); }
+    .footer-links { display: flex; gap: 24px; }
+    .footer-links a {
+      font-size: 13px; color: var(--muted);
+      text-decoration: none; transition: color .2s;
+    }
+    .footer-links a:hover { color: var(--text); }
+
+    /* ─── DIVIDER ─── */
+    .divider {
+      height: 1px; background: var(--border);
+      margin: 0;
+    }
+
+    /* ─── ANIMATIONS ─── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .reveal {
+      opacity: 0; transform: translateY(30px);
+      transition: opacity .7s ease, transform .7s ease;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* ─── SCROLLBAR ─── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 900px) {
+      nav { padding: 16px 24px; }
+      .nav-links { display: none; }
+      .section { padding: 60px 24px; }
+      .features-grid { grid-template-columns: 1fr 1fr; }
+      .two-col { grid-template-columns: 1fr; gap: 32px; }
+      footer { flex-direction: column; padding: 32px 24px; }
+    }
+    @media (max-width: 600px) {
+      .features-grid { grid-template-columns: 1fr; }
+      .hero-stats { flex-direction: column; gap: 20px; }
+      .modules-inner { padding: 0 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════ NAV ══════════════════ -->
+<nav>
+  <div class="nav-logo">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <rect x="1" y="1" width="7" height="7" rx="1.5" fill="#58a6ff"/>
+      <rect x="10" y="1" width="7" height="7" rx="1.5" fill="#3fb950" opacity=".7"/>
+      <rect x="1" y="10" width="7" height="7" rx="1.5" fill="#e3b341" opacity=".7"/>
+      <rect x="10" y="10" width="7" height="7" rx="1.5" fill="#f78166" opacity=".7"/>
+    </svg>
+    TaskFlow<span>/</span>Manager
+  </div>
+  <div class="nav-links">
+    <a href="#modules">Модули</a>
+    <a href="#features">Возможности</a>
+    <a href="#tech">Технологии</a>
+    <a href="#about">О проекте</a>
+  </div>
+  <div class="nav-badge">v1.0 · Python 3.11</div>
+</nav>
+
+<!-- ══════════════════ HERO ══════════════════ -->
+<section id="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-glow-2"></div>
+
+  <div class="hero-tag">Лабораторная работа · Вариант 16</div>
+
+  <h1 class="hero-title">
+    <span class="line-blue">TaskFlow</span><br>
+    <span class="line-dim">Manager</span>
+  </h1>
+
+  <p class="hero-sub">
+    Система управления задачами с финансовыми расчётами
+    и просмотром истории по временным отрезкам
+  </p>
+
+  <div class="hero-actions">
+    <a href="https://github.com/leadmee/TaskFlow-Manager" class="btn btn-primary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+      GitHub
+    </a>
+    <a href="#modules" class="btn btn-outline">
+      Узнать больше ↓
+    </a>
+  </div>
+
+  <div class="hero-stats">
+    <div class="stat">
+      <div class="stat-num"><span class="accent">10</span></div>
+      <div class="stat-label">Модулей</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num"><span class="accent">2</span></div>
+      <div class="stat-label">Роли доступа</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num"><span class="accent">34</span></div>
+      <div class="stat-label">Коммита</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num"><span class="accent">3.11</span></div>
+      <div class="stat-label">Python</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════════ MODULES ══════════════════ -->
+<section id="modules">
+  <div class="modules-inner">
+    <div class="section-tag">Архитектура</div>
+    <h2 class="section-title">Модули системы</h2>
+    <p class="section-desc" style="margin-bottom:40px;">Система построена по модульному принципу — каждый компонент отвечает за строго определённую область функциональности.</p>
+
+    <div class="modules-grid reveal">
+      <div class="module-item">
+        <div class="module-num">М — 01</div>
+        <span class="module-icon">⚙️</span>
+        <div class="module-title">Ядро приложения</div>
+        <div class="module-desc">Запуск системы, координация взаимодействия между модулями, обработка команд пользователя и маршрутизация данных.</div>
+      </div>
+      <div class="module-item">
+        <div class="module-num">М — 02</div>
+        <span class="module-icon">📋</span>
+        <div class="module-title">Модель задач</div>
+        <div class="module-desc">Структура данных задач: название, описание, срок, приоритет, стоимость. Создание, редактирование и удаление.</div>
+      </div>
+      <div class="module-item">
+        <div class="module-num">М — 03</div>
+        <span class="module-icon">📅</span>
+        <div class="module-title">Планировщик задач</div>
+        <div class="module-desc">Алгоритмы распределения задач по времени, установка дедлайнов, сортировка по приоритету и срокам выполнения.</div>
+      </div>
+      <div class="module-item">
+        <div class="module-num">М — 04</div>
+        <span class="module-icon">💰</span>
+        <div class="module-title">Финансовые расчёты</div>
+        <div class="module-desc">Расчёт стоимости задач, учёт расходов, прогнозирование бюджета и анализ финансовых показателей за периоды.</div>
+      </div>
+      <div class="module-item">
+        <div class="module-num">М — 05</div>
+        <span class="module-icon">🗄️</span>
+        <div class="module-title">Хранение истории</div>
+        <div class="module-desc">Фиксация всех изменений задач и финансовых параметров с привязкой к дате и времени операции.</div>
+      </div>
+      <div class="module-item">
+        <div class="module-num">М — 06</div>
+        <span class="module-icon">🔍</span>
+        <div class="module-title">Просмотр истории</div>
+        <div class="module-desc">Отображение и фильтрация истории действий по временным отрезкам: день, неделя, месяц, год.</div>
+      </div>
+      <div class="module-item">
+        <div class="module-num">М — 07</div>
+        <span class="module-icon">📊</span>
+        <div class="module-title">Отчёты и аналитика</div>
+        <div class="module-desc">Генерация отчётов по задачам и финансовым операциям, анализ эффективности выполнения задач.</div>
+      </div>
+      <div class="module-item">
+        <div class="module-num">М — 08</div>
+        <span class="module-icon">📂</span>
+        <div class="module-title">Импорт и экспорт</div>
+        <div class="module-desc">Сохранение и загрузка данных задач и финансовых показателей между сеансами работы программы.</div>
+      </div>
+      <div class="module-item">
+        <div class="module-num">М — 09</div>
+        <span class="module-icon">🖥️</span>
+        <div class="module-title">Пользовательский интерфейс</div>
+        <div class="module-desc">Интерфейс взаимодействия пользователя с системой: управление задачами, история, финансы, отчёты.</div>
+      </div>
+      <div class="module-item">
+        <div class="module-num">М — 10</div>
+        <span class="module-icon">🔔</span>
+        <div class="module-title">Система уведомлений</div>
+        <div class="module-desc">Информирование о приближении сроков выполнения задач и превышении установленного бюджета.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════════ FEATURES ══════════════════ -->
+<section id="features">
+  <div class="section">
+    <div class="section-tag">Возможности</div>
+    <h2 class="section-title">Что умеет система</h2>
+    <p class="section-desc">Полный набор инструментов для организации работы и контроля бюджета.</p>
+
+    <div class="features-grid reveal">
+      <div class="feature-card">
+        <div class="feat-icon blue">📋</div>
+        <div class="feature-title">Управление задачами</div>
+        <div class="feature-desc">Создание задач с приоритетами, дедлайнами и стоимостью. Удобное редактирование и отслеживание статусов выполнения.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feat-icon green">💵</div>
+        <div class="feature-title">Финансовый учёт</div>
+        <div class="feature-desc">Автоматический подсчёт расходов по задачам. Установка бюджетных лимитов и контроль их превышения.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feat-icon orange">🕒</div>
+        <div class="feature-title">История изменений</div>
+        <div class="feature-desc">Каждое действие фиксируется с датой и временем. Просмотр истории за любой временной период.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feat-icon gold">📈</div>
+        <div class="feature-title">Аналитика и отчёты</div>
+        <div class="feature-desc">Генерация отчётов за выбранный период. Анализ эффективности, статистика по задачам и расходам.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feat-icon purple">⚡</div>
+        <div class="feature-title">Умный планировщик</div>
+        <div class="feature-desc">Автоматическая сортировка задач по приоритету и дедлайнам. Оптимизация расписания работы.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feat-icon cyan">🔔</div>
+        <div class="feature-title">Push-уведомления</div>
+        <div class="feature-desc">Своевременные напоминания о приближении сроков и предупреждения при превышении бюджета.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════════ TERMINAL ══════════════════ -->
+<section style="background: var(--surface);">
+  <div class="section">
+    <div class="section-tag">Использование</div>
+    <h2 class="section-title">Быстрый старт</h2>
+    <p class="section-desc">Запуск системы и создание первой задачи занимает меньше минуты.</p>
+
+    <div class="terminal-wrap reveal">
+      <div class="terminal-bar">
+        <div class="t-dot r"></div>
+        <div class="t-dot y"></div>
+        <div class="t-dot g"></div>
+        <div class="t-file">taskflow/main.py</div>
+      </div>
+      <div class="terminal-body">
+        <div><span class="t-prompt">$</span> <span class="t-cmd">git clone https://github.com/leadmee/TaskFlow-Manager</span></div>
+        <div><span class="t-prompt">$</span> <span class="t-cmd">cd TaskFlow-Manager</span></div>
+        <div><span class="t-prompt">$</span> <span class="t-cmd">pip install -r requirements.txt</span></div>
+        <div class="t-output">Installing collected packages: taskflow-core, schedule, rich...</div>
+        <div class="t-success">Successfully installed all packages</div>
+        <div>&nbsp;</div>
+        <div><span class="t-prompt">$</span> <span class="t-cmd">python main.py</span></div>
+        <div class="t-info">[INFO] TaskFlow Manager v1.0 запущен</div>
+        <div class="t-info">[INFO] Подключение к базе данных... OK</div>
+        <div class="t-info">[INFO] Загрузка модулей:</div>
+        <div class="t-output">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;✓ core &nbsp;&nbsp;&nbsp;✓ scheduler &nbsp;&nbsp;&nbsp;✓ finance</div>
+        <div class="t-output">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;✓ history &nbsp;&nbsp;✓ reports &nbsp;&nbsp;&nbsp;✓ notify</div>
+        <div class="t-success">[OK] Система готова к работе</div>
+        <div>&nbsp;</div>
+        <div><span class="t-prompt">&gt;&gt;&gt;</span> <span class="t-cmd">task = Task(title="Финансовый отчёт", priority=1, due_date="2026-04-01")</span></div>
+        <div><span class="t-prompt">&gt;&gt;&gt;</span> <span class="t-cmd">task.save()</span></div>
+        <div class="t-success">Задача #1 создана: "Финансовый отчёт" [Высокий приоритет]</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════════ TECH ══════════════════ -->
+<section id="tech">
+  <div class="section">
+    <div class="section-tag">Технологии</div>
+    <h2 class="section-title">Стек разработки</h2>
+    <p class="section-desc">Современный технологический стек с упором на надёжность и расширяемость.</p>
+
+    <div class="stack-row reveal">
+      <div class="stack-item"><span class="stack-dot" style="background:#3572A5"></span> Python 3.11</div>
+      <div class="stack-item"><span class="stack-dot" style="background:#0075ca"></span> SQLite 3</div>
+      <div class="stack-item"><span class="stack-dot" style="background:#e3b341"></span> JSON / CSV</div>
+      <div class="stack-item"><span class="stack-dot" style="background:#3fb950"></span> schedule</div>
+      <div class="stack-item"><span class="stack-dot" style="background:#f78166"></span> rich (CLI)</div>
+      <div class="stack-item"><span class="stack-dot" style="background:#bc8cff"></span> Tkinter GUI</div>
+      <div class="stack-item"><span class="stack-dot" style="background:#58a6ff"></span> GitHub Actions</div>
+      <div class="stack-item"><span class="stack-dot" style="background:#ff7b72"></span> pytest</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════════ ABOUT ══════════════════ -->
+<section id="about" style="background: var(--surface);">
+  <div class="section">
+    <div class="section-tag">О проекте</div>
+    <h2 class="section-title">Прогресс разработки</h2>
+    <p class="section-desc">Текущее состояние реализации модулей.</p>
+
+    <div class="two-col reveal">
+      <div>
+        <div class="prog-list">
+          <div class="prog-item">
+            <div class="prog-header"><span class="prog-label">Ядро и модель задач</span><span class="prog-val">100%</span></div>
+            <div class="prog-bar"><div class="prog-fill" style="width:100%"></div></div>
+          </div>
+          <div class="prog-item">
+            <div class="prog-header"><span class="prog-label">Планировщик</span><span class="prog-val">90%</span></div>
+            <div class="prog-bar"><div class="prog-fill" style="width:90%"></div></div>
+          </div>
+          <div class="prog-item">
+            <div class="prog-header"><span class="prog-label">Финансовый модуль</span><span class="prog-val">85%</span></div>
+            <div class="prog-bar"><div class="prog-fill" style="width:85%"></div></div>
+          </div>
+          <div class="prog-item">
+            <div class="prog-header"><span class="prog-label">История и отчёты</span><span class="prog-val">80%</span></div>
+            <div class="prog-bar"><div class="prog-fill" style="width:80%"></div></div>
+          </div>
+          <div class="prog-item">
+            <div class="prog-header"><span class="prog-label">Импорт / Экспорт</span><span class="prog-val">75%</span></div>
+            <div class="prog-bar"><div class="prog-fill" style="width:75%"></div></div>
+          </div>
+          <div class="prog-item">
+            <div class="prog-header"><span class="prog-label">Уведомления</span><span class="prog-val">70%</span></div>
+            <div class="prog-bar"><div class="prog-fill" style="width:70%"></div></div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:20px;">
+        <div class="accent-block">
+          <div class="big-num">34</div>
+          <div class="big-label">Коммита в репозитории</div>
+          <div class="big-desc">История разработки от первоначального планирования до реализации всех модулей системы.</div>
+        </div>
+        <div class="accent-block" style="display:flex;gap:28px;align-items:center;">
+          <div>
+            <div style="font-family:var(--mono);font-size:36px;font-weight:700;color:var(--gold);">ПИ-22б</div>
+            <div style="font-size:13px;color:var(--muted);margin-top:6px;">Татаринцев Б. А.</div>
+          </div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.7;">
+            ДонНТУ · Институт КНТ<br>
+            Кафедра программной инженерии<br>
+            Вариант 16 · 2026
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ FOOTER ══════════════════ -->
+<footer>
+  <div class="footer-left">
+    <strong>TaskFlow Manager</strong> — система управления задачами<br>
+    Донецкий национальный технический университет · 2026
+  </div>
+  <div class="footer-links">
+    <a href="https://github.com/leadmee/TaskFlow-Manager">GitHub</a>
+    <a href="https://github.com/leadmee">leadmee</a>
+    <a href="#hero">↑ Наверх</a>
+  </div>
+</footer>
+
+<script>
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: .1 });
+  reveals.forEach(el => io.observe(el));
+</script>
+</body>
+</html>
